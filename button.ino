@@ -25,6 +25,7 @@ void buttonTick()
   {
     if (++currentMode >= (int8_t)MODE_AMOUNT) currentMode = 0;
     db[kk::current_eff] = currentMode;
+    updateDBeffectParams();
     FastLED.setBrightness(modes[currentMode].bright);
     loadingFlag = true;
     FastLED.clear();
@@ -36,7 +37,9 @@ void buttonTick()
   if (ONflag && clickCount == 3U)
   {
     if (--currentMode < 0) currentMode = MODE_AMOUNT - 1;
+    saveModeStateInDB();
     db[kk::current_eff] = currentMode;
+    updateDBeffectParams();
     FastLED.setBrightness(modes[currentMode].bright);
     loadingFlag = true;
     FastLED.clear();
@@ -68,7 +71,7 @@ void buttonTick()
             : modes[currentMode].bright - delta,
           1, 255);
         db[SH(getCurrentEffectKey())] = modes[currentMode];
-        currentState = modes[currentMode];
+        db[kk::bright_k] = modes[currentMode].bright;
 
         FastLED.setBrightness(modes[currentMode].bright);
 
@@ -84,7 +87,7 @@ void buttonTick()
         modes[currentMode].speed = constrain(brightDirection ? modes[currentMode].speed + 1 : modes[currentMode].speed - 1, effects[currentMode].min_speed,
         effects[currentMode].max_speed);
         db[SH(getCurrentEffectKey())] = modes[currentMode];
-        currentState = modes[currentMode];
+        db[kk::speed_k] = modes[currentMode].speed;
 
         #ifdef GENERAL_DEBUG
         LOG.printf_P(PSTR("Новое значение скорости: %d\n"), modes[currentMode].speed);
@@ -98,7 +101,7 @@ void buttonTick()
         modes[currentMode].scale = constrain(brightDirection ? modes[currentMode].scale + 1 : modes[currentMode].scale - 1, effects[currentMode].min_scale,
         effects[currentMode].max_scale);
         db[SH(getCurrentEffectKey())] = modes[currentMode];
-        currentState = modes[currentMode];
+        db[kk::scale_k] = modes[currentMode].scale;
 
         #ifdef GENERAL_DEBUG
         LOG.printf_P(PSTR("Новое значение масштаба: %d\n"), modes[currentMode].scale);

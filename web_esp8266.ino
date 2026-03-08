@@ -33,7 +33,10 @@ DB_KEYS(
     kk,
     wifi_ssid,
     wifi_pass,
-    current_eff
+    current_eff,
+    bright_k,
+    speed_k,
+    scale_k
 );
 
 CRGB leds[NUM_LEDS];
@@ -45,7 +48,6 @@ uint8_t TimerManager::TimerOption = 1U;
 uint64_t TimerManager::TimeToFire = 0ULL;
 
 EffectState modes[MODE_AMOUNT];
-EffectState currentState;
 void initDB(EffectState modes[]) {
   db.init(kk::wifi_ssid, "");
   db.init(kk::wifi_pass, "");
@@ -66,8 +68,24 @@ void initDB(EffectState modes[]) {
     if (db.has(kk::current_eff) == false) {
       db[kk::current_eff] = 0;
     }
-    snprintf(key, sizeof(key), "eff_%u", db[kk::current_eff].toInt());
-    db[SH(key)].writeTo(currentState);
+    EffectState currentState;
+    db[SH(getCurrentEffectKey())].writeTo(currentState);
+    db[kk::bright_k] = currentState.bright;
+    db[kk::speed_k] = currentState.speed;
+    db[kk::scale_k] = currentState.scale;
+}
+void saveModeStateInDB() {
+  EffectState currentState = {
+    db[kk::bright_k],
+    db[kk::speed_k],
+    db[kk::scale_k]
+  };
+  db[SH(getCurrentEffectKey())] = currentState;
+}
+void updateDBeffectParams() {
+  db[kk::bright_k] = modes[db[kk::current_eff]].bright;
+  db[kk::speed_k] = modes[db[kk::current_eff]].speed;
+  db[kk::scale_k] = modes[db[kk::current_eff]].scale;
 }
 const char* getCurrentEffectKey() {
   static char key[12];
@@ -85,6 +103,12 @@ void build(sets::Builder& b) {
     }
 
     if (tab == 0) {
+      if (b.Button("Вкл/Выкл")) {
+        ONflag = !ONflag;
+        changePower();
+        loadingFlag = true;
+      }
+
       if (b.beginGroup("Таймер выключения")) {
           if (b.Slider("Минуты", 10, 180, 5, "")) {
             
@@ -98,31 +122,34 @@ void build(sets::Builder& b) {
       if (b.beginGroup("Эффекты")) {
           // Выпадающий список эффектов
           if (b.Select(kk::current_eff, "Эффект", getEffectsNames())) {
-            db[SH(getCurrentEffectKey())].writeTo(currentState);
+            saveModeStateInDB();
+            updateDBeffectParams();
             b.reload();
           }
 
-          if (b.Slider("Яркость", 1, 255, 1, "", &currentState.bright)) {
-            db[SH(getCurrentEffectKey())] = currentState;
-            modes[db[kk::current_eff]] = currentState;
+          if (kk::bright_k, b.Slider("Яркость", 1, 255, 1, "")) {
+            saveModeStateInDB();
+            modes[db[kk::current_eff]].bright = b.build.value;
           }
 
           if (b.Slider(
+              kk::speed_k,
               "Скорость",
               effects[db[kk::current_eff].toInt()].min_speed,
               effects[db[kk::current_eff].toInt()].max_speed,
-              1, "", &currentState.speed)) {
-                db[SH(getCurrentEffectKey())] = currentState;
-                modes[db[kk::current_eff]] = currentState;
+              1, "")) {
+                saveModeStateInDB();
+                modes[db[kk::current_eff]].speed = b.build.value;
               }
 
           if (b.Slider(
+              kk::scale_k,
               "Масштаб",
               effects[db[kk::current_eff].toInt()].min_scale,
               effects[db[kk::current_eff].toInt()].max_scale,
-              1, "", &currentState.scale)) {
-                db[SH(getCurrentEffectKey())] = currentState;
-                modes[db[kk::current_eff]] = currentState;
+              1, "")) {
+                saveModeStateInDB();
+                modes[db[kk::current_eff]] = b.build.value;
               }
           b.endGroup();  // закрыть группу
       }

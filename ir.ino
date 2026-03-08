@@ -25,7 +25,9 @@ void irTick()
     // след эффект
     if (ONflag && irCode == "0xF7708F") {
       if (++currentMode >= (int8_t)MODE_AMOUNT) currentMode = 0;
+      saveModeStateInDB();
       db[kk::current_eff] = currentMode;
+      updateDBeffectParams();
       FastLED.setBrightness(modes[currentMode].bright);
       loadingFlag = true;
       FastLED.clear();
@@ -35,7 +37,9 @@ void irTick()
     // пред эффект
     if (ONflag && irCode == "0xF730CF") {
       if (--currentMode < 0) currentMode = MODE_AMOUNT - 1;
+      saveModeStateInDB();
       db[kk::current_eff] = currentMode;
+      updateDBeffectParams();
       FastLED.setBrightness(modes[currentMode].bright);
       loadingFlag = true;
       FastLED.clear();
@@ -50,7 +54,8 @@ void irTick()
         modes[currentMode].bright =
           constrain(modes[currentMode].bright + delta, 1, 255);
         db[SH(getCurrentEffectKey())] = modes[currentMode];
-        currentState = modes[currentMode];
+        db[kk::bright_k] = modes[currentMode].bright;
+
         FastLED.setBrightness(modes[currentMode].bright);
 
         #ifdef GENERAL_DEBUG
@@ -66,7 +71,8 @@ void irTick()
         modes[currentMode].bright =
           constrain(modes[currentMode].bright - delta, 1, 255);
         db[SH(getCurrentEffectKey())] = modes[currentMode];
-        currentState = modes[currentMode];
+        db[kk::bright_k] = modes[currentMode].bright;
+
         FastLED.setBrightness(modes[currentMode].bright);
 
         #ifdef GENERAL_DEBUG
@@ -82,7 +88,7 @@ void irTick()
         effects[currentMode].max_speed
         );
       db[SH(getCurrentEffectKey())] = modes[currentMode];
-      currentState = modes[currentMode];
+        db[kk::speed_k] = modes[currentMode].speed;
 
       #ifdef GENERAL_DEBUG
         LOG.printf_P(PSTR("Новое значение скорости: %d\n"), modes[currentMode].speed);
@@ -97,7 +103,7 @@ void irTick()
         effects[currentMode].max_speed
         );
       db[SH(getCurrentEffectKey())] = modes[currentMode];
-      currentState = modes[currentMode];
+      db[kk::speed_k] = modes[currentMode].speed;
 
       #ifdef GENERAL_DEBUG
         LOG.printf_P(PSTR("Новое значение скорости: %d\n"), modes[currentMode].speed);
@@ -112,7 +118,7 @@ void irTick()
         effects[currentMode].max_scale
         );
       db[SH(getCurrentEffectKey())] = modes[currentMode];
-      currentState = modes[currentMode];
+      db[kk::scale_k] = modes[currentMode].scale;
 
       #ifdef GENERAL_DEBUG
         LOG.printf_P(PSTR("Новое значение масштаба: %d\n"), modes[currentMode].scale);
@@ -126,7 +132,7 @@ void irTick()
         effects[currentMode].max_scale
         );
       db[SH(getCurrentEffectKey())] = modes[currentMode];
-      currentState = modes[currentMode];
+      db[kk::scale_k] = modes[currentMode].scale;
 
       #ifdef GENERAL_DEBUG
         LOG.printf_P(PSTR("Новое значение масштаба: %d\n"), modes[currentMode].scale);
