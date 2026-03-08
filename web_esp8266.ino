@@ -48,6 +48,11 @@ uint8_t TimerManager::TimerOption = 1U;
 uint64_t TimerManager::TimeToFire = 0ULL;
 
 EffectState modes[MODE_AMOUNT];
+bool loadingFlag = true;
+bool ONflag = false;
+unsigned char matrixValue[8][16];
+static const uint8_t maxDim = max(WIDTH, HEIGHT);
+
 void initDB(EffectState modes[]) {
   db.init(kk::wifi_ssid, "");
   db.init(kk::wifi_pass, "");
@@ -107,9 +112,10 @@ void build(sets::Builder& b) {
         ONflag = !ONflag;
         changePower();
         loadingFlag = true;
+        b.reload();
       }
-
-      if (b.beginGroup("Таймер выключения")) {
+      if (ONflag) {
+        if (b.beginGroup("Таймер выключения")) {
           if (b.Slider("Минуты", 10, 180, 5, "")) {
             
           }
@@ -118,8 +124,8 @@ void build(sets::Builder& b) {
           }
 
           b.endGroup();  // закрыть группу
-      }
-      if (b.beginGroup("Эффекты")) {
+        }
+        if (b.beginGroup("Эффекты")) {
           // Выпадающий список эффектов
           if (b.Select(kk::current_eff, "Эффект", getEffectsNames())) {
             saveModeStateInDB();
@@ -149,10 +155,12 @@ void build(sets::Builder& b) {
               effects[db[kk::current_eff].toInt()].max_scale,
               1, "")) {
                 saveModeStateInDB();
-                modes[db[kk::current_eff]] = b.build.value;
+                modes[db[kk::current_eff]].scale = b.build.value;
               }
           b.endGroup();  // закрыть группу
+        }
       }
+      
     } else if (tab == 1) {
       sets::Group g(b, "WiFi");
       b.Input(kk::wifi_ssid, "SSID");
@@ -166,11 +174,6 @@ void build(sets::Builder& b) {
       b.Log(logger);
     }
 }
-
-bool loadingFlag = true;
-bool ONflag = false;
-unsigned char matrixValue[8][16];
-static const uint8_t maxDim = max(WIDTH, HEIGHT);
 
 void setup() {
     Serial.begin(115200);
