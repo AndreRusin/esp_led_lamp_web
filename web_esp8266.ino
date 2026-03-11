@@ -130,12 +130,17 @@ void build(sets::Builder& b) {
           if (b.Select(kk::current_eff, "Эффект", getEffectsNames())) {
             saveModeStateInDB();
             updateDBeffectParams();
+            FastLED.setBrightness(modes[kk::current_eff].bright);
+            loadingFlag = true;
+            FastLED.clear();
+            delay(1);
             b.reload();
           }
 
-          if (kk::bright_k, b.Slider("Яркость", 1, 255, 1, "")) {
+          if (b.Slider(kk::bright_k, "Яркость", 1, 255, 1, "")) {
             saveModeStateInDB();
             modes[db[kk::current_eff]].bright = b.build.value;
+            FastLED.setBrightness(modes[db[kk::current_eff]].bright);
           }
 
           if (b.Slider(
@@ -150,7 +155,7 @@ void build(sets::Builder& b) {
 
           if (b.Slider(
               kk::scale_k,
-              "Масштаб",
+              effects[db[kk::current_eff].toInt()].hasColor ? "Цвет" : "Масштаб",
               effects[db[kk::current_eff].toInt()].min_scale,
               effects[db[kk::current_eff].toInt()].max_scale,
               1, "")) {
